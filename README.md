@@ -8,3 +8,5 @@ Because we can provide only de-identified (i.e., summarized) human infection dat
 Data are available in this repository, and are also permanently archived in Dryad:
 
 Wood, Chelsea et al. (2019), Precision mapping of snail habitat provides a powerful indicator of human schistosomiasis transmission, Dryad, Dataset, https://doi.org/10.5061/dryad.djh9w0vvt
+
+Note that metadata files are provided for each of the data files (snail_data_metadata.csv and summary_human_and_habitat_data_metadata.csv).
