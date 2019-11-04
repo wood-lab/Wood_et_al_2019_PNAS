@@ -29,33 +29,55 @@ library(glmmTMB)
 library(ggeffects)
 library(plyr)
 library(AICcmodavg)
+library(sjPlot)
+library(broom)
+library(broom.mixed)
 library(MuMIn) # for averaging model predictions
 library(bbmle) # AICtab for negative binomial
 library(Hmisc) # for CI in ggplot
+library(rgdal)
+library(spdep)
+library(fields)
+library(cowplot)
 
 
 ####### Download data - note that the individual-level data on which this analysis was conducted are not provided, to protect patient privacy.
 
-villagedata <- read_csv("INDIVIDUAL-LEVEL DATASET NOT PROVIDED TO PROTECT PATIENT PRIVACY")
+villagedata <- read_csv("data/INDIVIDUAL-LEVEL DATA WITHHELD TO PROTECT PATIENT PRIVACY")
+
+# keep only those lines of data from 2017 or 2018 AND where no manipulation (i.e., net or vegetation removal manipulation) was in place
 data_subset <- villagedata %>% 
   filter((year==2017 & net!=1) | (year==2018 & (prawn|veg_removal)!=1))
+
+# check village names
 unique(data_subset$Village)
+
+# make LakeYN into a factor
 data_subset$LakeYN=as.factor(data_subset$LakeYN)
+
+# keep only complete cases
 data_subset_complete <- data_subset[complete.cases(data_subset), ]
+
+# get the full list of included villages
 data_subset_complete %>% summarise(unique(Village))
+
+# get the list of villages included in 2017
 data_subset_complete[data_subset_complete$year==2017,] %>% summarise(unique(Village))
+
+# get the list of villages included in 2018
 data_subset_complete[data_subset_complete$year==2018,] %>% summarise(unique(Village))
+
 # check which villages are included in each year
 data_subset %>% 
   filter(year==2017) %>% 
   distinct(Village)
 data_subset %>% summarise(n_distinct(Village))
+
 # check number of kids in study
 data_subset %>% summarise(n_distinct(ID))
 
 
-# Predictors 
-
+# GENERAL MODEL FORMULATIONS
 
 # demographic variables and random effects:
 # Class + sex + Pop_sc + LakeYN + (1|Village/ID)
@@ -63,15 +85,11 @@ data_subset %>% summarise(n_distinct(ID))
 # 1. 'null' model, with demographic predictors and random effects only: 
 # Sh ~ Class + sex + Pop_sc + LakeYN + (1|Village/ID)
 
-# next, 'snail only' models
-
 # 2. snail density only 
 # Sh ~ BulinusDens_sc + Class + sex + Pop_sc + LakeYN + (1|Village/ID)
 
 # 3. snail infection prevalence only
 # Sh ~ ShPrev_Bulinus_sc + Class + sex + Pop_sc + LakeYN + (1|Village/ID)
-
-# 4 - 14. include site characteristics and snail data in orthogonal combinations
 
 # 4. size and snail density separate
 # Sh ~ BulinusDens_sc + TotalSize_enclosure_sc + Class + sex + Pop_sc + LakeYN + (1|Village/ID)
@@ -108,7 +126,7 @@ data_subset %>% summarise(n_distinct(ID))
 
 
 
-# Run the Sh logistic models
+# LOGISTIC MODELS
 
 ########################################################
 ###########  S haematobium logistic models   ########### 
@@ -201,8 +219,8 @@ data_subset_complete$model14_resids<-residuals(full.orthog)
 
 
 
-### TEST FOR SPATIAL AUTOCORRELATION IN THESE MODELS
-# Make a matrix of villages and residuals for each observation
+### test for spatial auto-correlation in these models
+# start by making a matrix of villages and residuals for each observation
 
 residual_matrix<-cbind.data.frame(data_subset_complete$VillageCode,as.numeric(data_subset_complete$model1_resids),
                                   as.numeric(data_subset_complete$model2_resids),
@@ -243,7 +261,6 @@ names(aggregated)<-c("village","model1","model2","model3","model4","model5","mod
 
 # need to make a listw using the nb2listw function
 # start by importing all of the village-level polygons
-library(rgdal)
 village_polygons<-readOGR("data/polygons.shp")
 str(village_polygons)
 village_polygons$Name
@@ -252,7 +269,6 @@ village_polygons$Name
 # each dimension, but weights the component triangles of the polygon by area:
 # https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
 
-library(spdep)
 coords<-coordinates(village_polygons)
 IDs<-c("Diokhor","Diokoul","Guidik","Lampsar","Malla","Malla Tack","Mbakhana",
        "Mbane","Mbarigot","Merina Gewel","Ndiawdoune","Ndiol Maure","Syer")
@@ -296,7 +312,6 @@ IDs<-c("Diokhor","Diokoul","Guidik","Lampsar","Malla","Malla Tack","Mbakhana",
        "Mbane","Mbarigot","Merina Gewel","Ndiawdoune","Ndiol Maure","Syer")
 spatialmatrix<-cbind.data.frame(coords)
 
-library(fields)
 dist<-rdist.earth(spatialmatrix,spatialmatrix,miles=FALSE)
 distances<-cbind.data.frame(IDs,dist)
 names(distances)<-c("","Diokhor","Diokoul","Guidik","Lampsar","Malla","Malla Tack","Mbakhana",
@@ -313,7 +328,6 @@ write.csv(data_subset_complete$mergevillage)
 ########################################################
 ###########  S haematobium logistic models   ########### 
 # every model: Class + sex + Pop_sc + LakeYN + (1|Village/ID)
-
 
 # 1.
 null.model <- glmer(Sh ~ Class + sex + Pop_sc + LakeYN + (1|mergevillage/ID), data = data_subset_complete, 
@@ -472,12 +486,9 @@ full.orthog <- glmer(Sh ~ TotalSize_enclosure_sc + VegMassAvg_sampled_sc + Bulin
                      family = 'binomial', control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=100000)))
 summary(full.orthog)
 data_subset_complete$model14_resids<-residuals(full.orthog)
-r.squaredGLMM(full.orthog)
 
 
 #make a plot of observed versus predicted for all interpreted models
-
-library(cowplot)
 
 a<-ggdraw(plot=NULL,xlim=c(0,6),ylim=c(0,1))+
   draw_plot(a_i,x=0,y=0,width=1,height=1)+
@@ -495,8 +506,8 @@ a<-ggdraw(plot=NULL,xlim=c(0,6),ylim=c(0,1))+
   draw_text("(6)",x=5.35,y=0.97,size=24)
 
 
-### TEST FOR SPATIAL AUTOCORRELATION IN THESE MODELS
-# Make a matrix of villages and residuals for each observation
+### test for spatial autocorrelation in these models
+# start by making a matrix of villages and residuals for each observation
 
 residual_matrix<-cbind.data.frame(data_subset_complete$mergevillage,as.numeric(data_subset_complete$model1_resids),
                                   as.numeric(data_subset_complete$model2_resids),
@@ -523,8 +534,8 @@ names(aggregated)<-c("village","model1","model2","model3","model4","model5","mod
 
 # need to make a listw using the nb2listw function
 # start by importing all of the village-level polygons
-library(rgdal)
-village_polygons<-readOGR("/Users/chelsealwood/Documents/Documents/UW/Projects/Schisto/Addressing spatial autocorrelation among villages/final_sitesmerged/final_sitesmerged-polygon.shp")
+
+village_polygons<-readOGR("data/sitesmerged-polygons.shp")
 str(village_polygons)
 village_polygons$Name
 
@@ -532,7 +543,6 @@ village_polygons$Name
 # each dimension, but weights the component triangles of the polygon by area:
 # https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
 
-library(spdep)
 coords<-coordinates(village_polygons)
 IDs<-c("Diokhor","Diokoul","Guidik","Lampsar","Malla","Malla Tack","MbakhanaMbarigot",
        "Mbane","Merina Gewel","Ndiawdoune","Ndiol Maure","Syer")
@@ -569,8 +579,7 @@ moran.mc(aggregated$model14,lw,na.action = na.omit,nsim=999)
 # auto-correlation.
 
 
-# Model selection (BIC)
-## Compare models by AICc (package `AICcmodavg`)
+# model selection (BIC)
 Sh.mod.list <- c(null.model, density.only, prev.only, size.dens, snail.total, size.dens.prev, inf.snail.total, dens.prev, inf.snail.dens, size.perc.other, total.other, size.perc.vegmass, veg.total.mass, full.orthog)
 Sh.mod.names <- c('Null', 'Sh ~ BulinusDens_sc', 'Sh ~ ShPrev_Bulinus_sc', 
                   'Sh ~ BulinusDens_sc + TotalSize_enclosure_sc',
@@ -587,7 +596,7 @@ Sh.mod.names <- c('Null', 'Sh ~ BulinusDens_sc', 'Sh ~ ShPrev_Bulinus_sc',
 Sh.mod.names2 <- c('null.model', 'density.only', 'prev.only', 'size.dens', 'snail.total', 'size.dens.prev', 'inf.snail.total', 'dens.prev', 'inf.snail.dens', 'size.perc.other', 'total.other', 'size.perc.vegmass', 'veg.total.mass', 'full.orthog')
 
 
-#get the BIC for all models
+#get the marginal and conditional R2 for all models
 tab_model(Sh.mod.list, show.r2 = TRUE, show.icc = FALSE, show.aic = FALSE,
           dv.labels = c('Null', 'Sh ~ BulinusDens_sc', 'Sh ~ ShPrev_Bulinus_sc', 
                         'Sh ~ BulinusDens_sc + TotalSize_enclosure_sc',
@@ -603,14 +612,12 @@ tab_model(Sh.mod.list, show.r2 = TRUE, show.icc = FALSE, show.aic = FALSE,
                         'Sh ~ TotalSize_enclosure_sc + VegMassAvg_sampled_sc + BulinusDens_sc + ShPrev_Bulinus_sc + PercOther_sc + PercMud_sc'))
 
 
-#decided to do this by BIC to make it more comparable with Grant's analysis
-
 ## top 6 models, within 10 deltaBIC
 Sh.mod.subset <- c(total.other, null.model, size.perc.other, snail.total, veg.total.mass,inf.snail.total)
 Sh.mod.subset_names <- c('total.other', 'null.model', 'size.perc.other', 'snail.total', 'veg.total.mass', 'inf.snail.total')
 
 
-# Top model coefficient plot (main text, Figure 3A) for logistic model
+# top model coefficient plot (main text, Figure 3A) for logistic model
 
 # get predictions for each model
 M1.preds <- tidy(Sh.mod.subset[[1]], conf.int=TRUE) %>% 
@@ -648,16 +655,14 @@ Sh.odds = bind_rows(M1.preds,M2.preds,M3.preds,M4.preds,M5.preds,M6.preds) %>%
   filter(term != '(Intercept)')
 
 dodger = position_dodge(width = 0.9)
-# Elements like pointrange and position_dodge only work when the outcome
+# elements like pointrange and position_dodge only work when the outcome
 # is mapped to y, need to go through with OR set as y then flip at the end
-ggplot(Sh.odds[Sh.odds$effect=='fixed',], aes(y = estimate, x = term, color=term, shape = Model)) +
+ggplot(Sh.odds[Sh.odds$group=='fixed',], aes(y = estimate, x = term, color=term, shape = Model)) +
   geom_pointrange(aes(ymin = conf.low, ymax = conf.high),position = dodger,size = 0.4) +
-  scale_colour_manual(values=c("black","black","black","black","black","black","black","black",
-                               "black","black","black","black")) +
-  scale_x_discrete(limits=c("ShBulinus_Total_sc","BulinusTotal_sc","VegMassTotal_sc",
-                            "PercMud_sc","PercOther_sc","MudTotal_sc",
-                            "OtherVegTotal_sc","TotalSize_enclosure_sc","Class",
-                            "Pop_sc","sexM","LakeYN1"),labels=c("infected snail abundance",
+  scale_colour_manual(values=c("black","black","black","black","black","black","black","black","black","black","black","black")) +
+  scale_x_discrete(limits=c("ShBulinus_Total_sc","BulinusTotal_sc","VegMassTotal_sc","PercMud_sc","PercOther_sc","MudTotal_sc",
+                            "OtherVegTotal_sc","TotalSize_enclosure_sc","Class","Pop_sc","sexM","LakeYN1"),
+                        labels=c("infected snail abundance",
                                                                 "snail abundance","total mass of non-emergent vegetation",
                                                                 "percent cover of mud",
                                                                 "percent cover of non-emergent vegetation",
@@ -667,26 +672,25 @@ ggplot(Sh.odds[Sh.odds$effect=='fixed',], aes(y = estimate, x = term, color=term
                                                                 "village population","sex: male (vs. female)",
                                                                 "location: lake (vs. river)")) +
   geom_hline(yintercept = 1.0, linetype = "dotted", size = 0.5) +
-  scale_y_log10(breaks = c(0.25, 0.5, 1.0, 2.0, 5.0, 10, 20),
-                minor_breaks = NULL) +
+  scale_y_log10(breaks = c(0.25, 0.5, 1.0, 2.0, 5.0, 10, 20),minor_breaks = NULL) +
   labs(y = "odds ratio", x = "predictor") +
   theme(legend.position = "none") +
   coord_flip(ylim = c(0.25, 30)) +
   theme_classic() 
 
-# show model results as dataframe 
+# display top model results 
 tab_model(total.other, null.model, size.perc.other, snail.total, veg.total.mass,inf.snail.total,
           transform = "exp",
           pred.labels = c(),
           dv.labels = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5", "Model 6"),
           CSS = list(css.centeralign = 'text-align: left;'), 
           collapse.ci = TRUE,
-          show.r2 = TRUE, show.icc = FALSE,
-          show.aic = TRUE)
+          show.r2 = FALSE, show.icc = FALSE,
+          show.aic = FALSE)
 
 
 
-# Negative binomial models 
+# NEGATIVE BINOMIAL MODELS 
 
 #################       S haematobium negative binomial models     ##################  
 #####################################################################################
@@ -778,8 +782,8 @@ summary(Sh.nb.full.orthog)
 data_subset_complete$nb_model14_resids<-residuals(Sh.nb.full.orthog)
 
 
-### TEST FOR SPATIAL AUTOCORRELATION IN THESE MODELS
-# Make a matrix of villages and residuals for each observation
+### test for spatial autocorrelation in these models
+# start by making a matrix of villages and residuals for each observation
 
 residual_matrix_nb<-cbind.data.frame(data_subset_complete$Village,as.numeric(data_subset_complete$nb_model1_resids),
                                      as.numeric(data_subset_complete$nb_model2_resids),
@@ -808,7 +812,6 @@ names(aggregated_nb)<-c("village","model1","model2","model3","model4","model5","
 # need to make a listw using the nb2listw function
 # start by importing all of the village-level polygons
 
-library(rgdal)
 village_polygons<-readOGR("data/polygons.shp")
 str(village_polygons)
 village_polygons$Name
@@ -817,7 +820,6 @@ village_polygons$Name
 # each dimension, but weights the component triangles of the polygon by area:
 # https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
 
-library(spdep)
 coords<-coordinates(village_polygons)
 IDs<-c("Diokhor","Diokoul","Guidik","Lampsar","Malla","Malla Tack","Mbakhana",
        "Mbane","Mbarigot","Merina Gewel","Ndiawdoune","Ndiol Maure","Syer")
@@ -854,7 +856,8 @@ moran.mc(aggregated_nb$model14,lw,na.action = na.omit,nsim=999)
 # okay, there isn't any significant spatial auto-correlation here, but it's close. To reduce autocorrelation and keep
 # consistent with logistic analysis above, let's lump Mbakhana and Mbarigot agian.
 
-# Negative binomial models with Mbakhana and Mbarigot lumped (mergevillage instead of village)
+# Now that we've got Mbakhana and Mbarigot merged into a single village, we can proceed with analysis
+# negative binomial models with Mbakhana and Mbarigot lumped (mergevillage instead of village)
 
 #################       S haematobium negative binomial models     #################       
 # using glmmTMB with negative binomial with variance structure of (variance = µ(1 + µ/k): Hardin and Hilbe (2007)). 
@@ -1009,9 +1012,7 @@ b_v<-ggplot()+
   theme(axis.text=element_text(size=12), axis.title=element_text(size=20,face="bold"))
 
 
-#make a plot of observed versus predicted for all models
-
-library(cowplot)
+# make a plot of observed versus predicted for all interpreted models (SI Appendix, Figure S7)
 
 b<-ggdraw(plot=NULL,xlim=c(0,6),ylim=c(0,1))+
   draw_plot(b_i,x=0,y=0,width=1,height=1)+
@@ -1026,7 +1027,6 @@ b<-ggdraw(plot=NULL,xlim=c(0,6),ylim=c(0,1))+
   draw_text("(3)",x=2.85,y=0.95,size=24)+
   draw_text("(4)",x=3.85,y=0.95,size=24)+
   draw_text("(5)",x=4.85,y=0.95,size=24)
-
 
 final_prediction_plot<-ggdraw(plot=NULL,xlim=c(0,10),ylim=c(0,2.15))+
   draw_plot(a,x=0,y=1,width=10,height=1)+
@@ -1063,8 +1063,8 @@ names(aggregated_nb_merge)<-c("village","model1","model2","model3","model4","mod
 
 # need to make a listw using the nb2listw function
 # start by importing all of the village-level polygons
-library(rgdal)
-village_polygons<-readOGR("/Users/chelsealwood/Documents/Documents/UW/Projects/Schisto/Addressing spatial autocorrelation among villages/final_sitesmerged/final_sitesmerged-polygon.shp")
+
+village_polygons<-readOGR("data/sitesmerged-polygons.shp")
 str(village_polygons)
 village_polygons$Name
 
@@ -1072,7 +1072,6 @@ village_polygons$Name
 # each dimension, but weights the component triangles of the polygon by area:
 # https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
 
-library(spdep)
 coords<-coordinates(village_polygons)
 IDs<-c("Diokhor","Diokoul","Guidik","Lampsar","Malla","Malla Tack","MbakhanaMbarigot",
        "Mbane","Merina Gewel","Ndiawdoune","Ndiol Maure","Syer")
@@ -1113,11 +1112,20 @@ moran.mc(aggregated_nb_merge$model14,lw,na.action = na.omit,nsim=999)
 Sh.nb.mod.list <- c(Sh.nb.null.model, Sh.nb.density.only, Sh.nb.prev.only, Sh.nb.size.dens, Sh.nb.snail.total, Sh.nb.size.dens.prev, Sh.nb.inf.snail.total, Sh.nb.dens.prev, Sh.nb.inf.snail.dens, Sh.nb.size.perc.other, Sh.nb.total.other, Sh.nb.size.perc.vegmass, Sh.nb.veg.total.mass, Sh.nb.full.orthog)
 Sh.nb.mod.names <- c('Sh.nb.null.model','Sh.nb.density.only','Sh.nb.prev.only','Sh.nb.size.dens', 'Sh.nb.snail.total', 'Sh.nb.size.dens.prev', 'Sh.nb.inf.snail.total', 'Sh.nb.dens.prev', 'Sh.nb.inf.snail.dens', 'Sh.nb.size.perc.other','Sh.nb.total.other', 'Sh.nb.size.perc.vegmass', 'Sh.nb.veg.total.mass', 'Sh.nb.full.orthog')
 
+
+#get the marginal and conditional R2 for all models
+tab_model(Sh.nb.null.model, Sh.nb.density.only, Sh.nb.prev.only, Sh.nb.size.dens, Sh.nb.snail.total, Sh.nb.size.dens.prev, Sh.nb.inf.snail.total, Sh.nb.dens.prev, Sh.nb.inf.snail.dens, Sh.nb.size.perc.other, Sh.nb.total.other, Sh.nb.size.perc.vegmass, Sh.nb.veg.total.mass, Sh.nb.full.orthog,
+          show.r2 = TRUE, show.icc = FALSE, show.aic = FALSE, dv.labels = c('Sh.nb.null.model','Sh.nb.density.only','Sh.nb.prev.only','Sh.nb.size.dens',
+                                                                            'Sh.nb.snail.total', 'Sh.nb.size.dens.prev', 'Sh.nb.inf.snail.total', 'Sh.nb.dens.prev',
+                                                                            'Sh.nb.inf.snail.dens', 'Sh.nb.size.perc.other','Sh.nb.total.other', 'Sh.nb.size.perc.vegmass',
+                                                                            'Sh.nb.veg.total.mass', 'Sh.nb.full.orthog'))
+
 ## models within 10 delta BIC of top model
 Sh.nb.mod.subset <- c(Sh.nb.total.other, Sh.nb.size.perc.other, Sh.nb.size.perc.vegmass, Sh.nb.veg.total.mass, 
                       Sh.nb.full.orthog)
 
-# Top NB model coefficient plot (main text, Figure 3B)
+
+# top negative binomial model coefficient plot (main text, Figure 3B)
 
 # top models = Sh.nb.total.other, Sh.nb.size.perc.other, Sh.nb.size.perc.vegmass, Sh.nb.veg.total.mass, Sh.nb.full.orthog
 # get predictions for each model
@@ -1213,5 +1221,5 @@ tab_model(Sh.nb.total.other, Sh.nb.size.perc.other, Sh.nb.size.perc.vegmass, Sh.
           dv.labels = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
           CSS = list(css.centeralign = 'text-align: left;'), 
           collapse.ci = TRUE,
-          show.r2 = TRUE, show.icc = FALSE,
-          show.aic = TRUE)
+          show.r2 = FALSE, show.icc = FALSE,
+          show.aic = FALSE)
