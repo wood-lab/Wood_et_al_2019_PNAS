@@ -7,7 +7,7 @@ date: "updated 9 July 2019"
 # Introduction
   
   # We want to know which snail- and habitat-variables best predict human schistosomiasis infection rates, here measured 
-  # as reinfection to children over the course of one year following praziquantel treatment. 
+  # as re-infection to children over the course of one year following praziquantel treatment. 
   
   # WHICH SITES WERE INCLUDED?
   # For this analysis, which investigated the influence of snail, snail–habitat, and habitat variables on human infection burden, 
@@ -26,20 +26,12 @@ library(tidyverse)
 library(ggplot2)
 library(lme4)
 library(glmmTMB)
-library(visreg)
-library(sjPlot)
 library(ggeffects)
 library(plyr)
-library(broom) # for tidy
-library(broom.mixed)
-library(PerformanceAnalytics) # for correlation plots
 library(AICcmodavg)
 library(MuMIn) # for averaging model predictions
-library(gridExtra)
 library(bbmle) # AICtab for negative binomial
-library(DHARMa) # for visualizing glmmTMB resids
 library(Hmisc) # for CI in ggplot
-library(fitdistrplus) # for checking nb fits and calculating mu
 
 
 ####### Download data - note that the individual-level data on which this analysis was conducted are not provided, to protect patient privacy.
