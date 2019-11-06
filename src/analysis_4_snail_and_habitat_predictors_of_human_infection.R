@@ -595,6 +595,14 @@ Sh.mod.names <- c('Null', 'Sh ~ BulinusDens_sc', 'Sh ~ ShPrev_Bulinus_sc',
                   'Sh ~ TotalSize_enclosure_sc + VegMassAvg_sampled_sc + BulinusDens_sc + ShPrev_Bulinus_sc + PercOther_sc + PercMud_sc')
 Sh.mod.names2 <- c('null.model', 'density.only', 'prev.only', 'size.dens', 'snail.total', 'size.dens.prev', 'inf.snail.total', 'dens.prev', 'inf.snail.dens', 'size.perc.other', 'total.other', 'size.perc.vegmass', 'veg.total.mass', 'full.orthog')
 
+# BIC and MSE for all models is calculated in a separate script.
+# For logistic/binomial models, "Analysis 4: Identifying snail- and habitat-related predictors of human urogenital schistosomiasis burden - Calculating BIC and MSE for logistic/binomial models"
+# We used the BICs derived in those scripts to rank the models.
+
+## top 6 models, within 10 deltaBIC
+Sh.mod.subset <- c(total.other, null.model, size.perc.other, snail.total, veg.total.mass,inf.snail.total)
+Sh.mod.subset_names <- c('total.other', 'null.model', 'size.perc.other', 'snail.total', 'veg.total.mass', 'inf.snail.total')
+
 
 #get the marginal and conditional R2 for all models
 tab_model(Sh.mod.list, show.r2 = TRUE, show.icc = FALSE, show.aic = FALSE,
@@ -612,9 +620,7 @@ tab_model(Sh.mod.list, show.r2 = TRUE, show.icc = FALSE, show.aic = FALSE,
                         'Sh ~ TotalSize_enclosure_sc + VegMassAvg_sampled_sc + BulinusDens_sc + ShPrev_Bulinus_sc + PercOther_sc + PercMud_sc'))
 
 
-## top 6 models, within 10 deltaBIC
-Sh.mod.subset <- c(total.other, null.model, size.perc.other, snail.total, veg.total.mass,inf.snail.total)
-Sh.mod.subset_names <- c('total.other', 'null.model', 'size.perc.other', 'snail.total', 'veg.total.mass', 'inf.snail.total')
+
 
 
 # top model coefficient plot (main text, Figure 3A) for logistic model
@@ -1112,6 +1118,13 @@ moran.mc(aggregated_nb_merge$model14,lw,na.action = na.omit,nsim=999)
 Sh.nb.mod.list <- c(Sh.nb.null.model, Sh.nb.density.only, Sh.nb.prev.only, Sh.nb.size.dens, Sh.nb.snail.total, Sh.nb.size.dens.prev, Sh.nb.inf.snail.total, Sh.nb.dens.prev, Sh.nb.inf.snail.dens, Sh.nb.size.perc.other, Sh.nb.total.other, Sh.nb.size.perc.vegmass, Sh.nb.veg.total.mass, Sh.nb.full.orthog)
 Sh.nb.mod.names <- c('Sh.nb.null.model','Sh.nb.density.only','Sh.nb.prev.only','Sh.nb.size.dens', 'Sh.nb.snail.total', 'Sh.nb.size.dens.prev', 'Sh.nb.inf.snail.total', 'Sh.nb.dens.prev', 'Sh.nb.inf.snail.dens', 'Sh.nb.size.perc.other','Sh.nb.total.other', 'Sh.nb.size.perc.vegmass', 'Sh.nb.veg.total.mass', 'Sh.nb.full.orthog')
 
+# BIC and MSE for all models is calculated in a separate script.
+# For negative binomial models, "Analysis 4: Identifying snail- and habitat-related predictors of human urogenital schistosomiasis burden - Calculating BIC and MSE for negative binomial models"
+# We used the BICs derived in those scripts to rank the models.
+
+## models within 10 delta BIC of top model
+Sh.nb.mod.subset <- c(Sh.nb.total.other, Sh.nb.size.perc.other, Sh.nb.size.perc.vegmass, Sh.nb.veg.total.mass, 
+                      Sh.nb.full.orthog)
 
 #get the marginal and conditional R2 for all models
 tab_model(Sh.nb.null.model, Sh.nb.density.only, Sh.nb.prev.only, Sh.nb.size.dens, Sh.nb.snail.total, Sh.nb.size.dens.prev, Sh.nb.inf.snail.total, Sh.nb.dens.prev, Sh.nb.inf.snail.dens, Sh.nb.size.perc.other, Sh.nb.total.other, Sh.nb.size.perc.vegmass, Sh.nb.veg.total.mass, Sh.nb.full.orthog,
@@ -1120,9 +1133,6 @@ tab_model(Sh.nb.null.model, Sh.nb.density.only, Sh.nb.prev.only, Sh.nb.size.dens
                                                                             'Sh.nb.inf.snail.dens', 'Sh.nb.size.perc.other','Sh.nb.total.other', 'Sh.nb.size.perc.vegmass',
                                                                             'Sh.nb.veg.total.mass', 'Sh.nb.full.orthog'))
 
-## models within 10 delta BIC of top model
-Sh.nb.mod.subset <- c(Sh.nb.total.other, Sh.nb.size.perc.other, Sh.nb.size.perc.vegmass, Sh.nb.veg.total.mass, 
-                      Sh.nb.full.orthog)
 
 
 # top negative binomial model coefficient plot (main text, Figure 3B)
