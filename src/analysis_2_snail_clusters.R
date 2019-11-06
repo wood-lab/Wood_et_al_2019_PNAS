@@ -1,13 +1,20 @@
-#Chelsea Wood 2018
-#Edited by Skylar Hopkins 2018
-#This script file tests the relationship between site size and the number of snail clusters in water access points in Senegal
+---
+title: "Analysis 2: Number, size, and persistence of snail clusters in space and time"
+author: "Skylar Hopkins and Chelsea Wood"
+date: "updated 9 July 2019"
+---
+
+# We determined the number, size, and persistence of snail clusters in space and time using SatScan software, available for free at:
+# https://www.satscan.org
+# We then used the output of the SatScan software (site_area_clusters_numquads.csv) to test the relationship between site size and the 
+# number of snail clusters. That analysis is shown below.
 
 ####################################################################################################################
-######################################Laad data and packages########################################################
+######################################Load data and packages########################################################
 ####################################################################################################################
 rm(list = ls())
 
-#Load libraries
+# Load libraries
 library(lme4)
 library(gamm4)
 library(ggplot2)
@@ -17,28 +24,28 @@ library(tidyverse)
 library(dplyr)
 library(cowplot)
 
-#citation(package = "MASS")
-#citation(package = "stats")
+# citation(package = "MASS")
+# citation(package = "stats")
 
-#Load just the cluster and site area data
+# Load just the cluster and site area data
 rawdata<-read.csv("data/site_area_clusters_numquads.csv")
 rawdata<-rawdata[,-1]
 
-#Take out spaces to make formatting consistent
+# Take out spaces to make formatting consistent
 rawdata$site<-gsub(" ", "", rawdata$sampling_site, fixed = TRUE)
 table(rawdata$site, rawdata$field_mission)
 
-#Rename some columns
+# Rename some columns
 names(rawdata)<-c("sampling_site","field_mission","NumQuadsSampled", "AreaSampled","num_bulinus_clusters","area", "site")
 
-#sort by FM and site
+# sort by FM and site
 rawdata<- rawdata %>%
   arrange(field_mission, site)
 
 sitestoinclude<-unique(rawdata$site)
 
-#We also want to see if total area of other/floating veg is a better predictor than just area
-#We need the percent area column in this dataframe to get that
+# We also want to see if total area of other/floating veg is a better predictor than just area
+# We need the percent area column in this dataframe to get that
 PercentOtherVegData<-read.csv("~/Documents/Schisto/Schisto/Clusters vs Site Area Analysis/PercentOtherVegData.csv")
 head(PercentOtherVegData)
 #remove spaces in site name
@@ -47,13 +54,13 @@ PercentOtherVegData<- PercentOtherVegData %>%
   arrange(FM, Site)
 PercentOtherVegData<-PercentOtherVegData[PercentOtherVegData$Site %in% sitestoinclude,]
 dim(PercentOtherVegData)
-#same order, so just merge
+# same order, so just merge
 View(cbind(rawdata[,1:2], PercentOtherVegData[,1:2]))
 rawdata<-as.data.frame(cbind(rawdata, PercentOtherVegData$PercOther))
 names(rawdata)<-c(names(rawdata)[1:7], "PercentOtherVeg") #rename area_prawn to just area
 rawdata$OtherVegArea<-rawdata$area*(rawdata$PercentOtherVeg/100)
 
-#yes, we do need to account for area sampled
+# yes, we do need to account for area sampled
 plot(rawdata$num_bulinus_clusters~rawdata$NumQuadsSampled)
 
 ####################################################################################################################
@@ -62,13 +69,13 @@ plot(rawdata$num_bulinus_clusters~rawdata$NumQuadsSampled)
 ####################################################################################################################
 ####################################################################################################################
 
-#lmer complains about predictor scale - should we transform? Yes. Log looks good.
+# lmer complains about predictor scale - should we transform? Yes. Log looks good.
 hist(rawdata$area)
 hist(log(rawdata$area)) #better
 hist(rawdata$OtherVegArea)
 hist(log(rawdata$OtherVegArea+1)) #better - but what constant?
 
-#Total area - raw doesn't look good
+# Total area - raw doesn't look good
 plot<-ggplot(rawdata,aes(x=area,y=num_bulinus_clusters))+
   geom_point(position=position_dodge(0.2),size=4)+
   geom_smooth(method='lm',formula=y~x,color="black")+
@@ -79,7 +86,7 @@ plot<-ggplot(rawdata,aes(x=area,y=num_bulinus_clusters))+
   theme(legend.position="none")
 plot
 
-#Other veg area
+# Other veg area
 plot<-ggplot(rawdata,aes(x=OtherVegArea,y=num_bulinus_clusters))+
   geom_point(position=position_dodge(0.2),size=4)+
   geom_smooth(method='lm',formula=y~x,color="black")+
@@ -90,8 +97,8 @@ plot<-ggplot(rawdata,aes(x=OtherVegArea,y=num_bulinus_clusters))+
   theme(legend.position="none")
 plot
 
-#log much nicer - go w/ this - but not as nice as it used to look...
-#Total area
+# log much nicer - go w/ this - but not as nice as it used to look...
+# Total area
 plot<-ggplot(rawdata,aes(x=log(area),y=num_bulinus_clusters))+
   geom_point(position=position_dodge(0.2),size=4)+
   geom_smooth(method='lm',formula=y~x,color="black")+
@@ -102,7 +109,7 @@ plot<-ggplot(rawdata,aes(x=log(area),y=num_bulinus_clusters))+
   theme(legend.position="none")
 plot
 
-#other veg area
+# other veg area
 plot<-ggplot(rawdata,aes(x=log(OtherVegArea+1),y=num_bulinus_clusters))+
   geom_point(position=position_dodge(0.2),size=4)+
   geom_smooth(method='lm',formula=y~x,color="black")+
@@ -116,7 +123,7 @@ plot
 rawdata$log_area<-log(rawdata$area)
 rawdata$log_veg_area<-log(rawdata$OtherVegArea+1)
 
-#are they correlatetd?
+# are they correlatetd?
 plot(rawdata$log_veg_area~rawdata$log_area) #yes
 plot(rawdata$PercentOtherVeg~rawdata$log_area) #no
 plot(rawdata$log_veg_area~rawdata$NumQuadsSampled) #maybe
@@ -126,7 +133,7 @@ plot(rawdata$log_area~rawdata$NumQuadsSampled) #yes
 ###############Area models - per site per field mission########################################################
 ####################################################################################################################
 
-#Guassian model - theoretically inappropriate because we're working w/ zero truncated integers
+# Gaussian model - theoretically inappropriate because we're working w/ zero truncated integers
 model<-lmer(num_bulinus_clusters~log_area+(1|site), data=rawdata)
 plot(residuals(model, type="pearson")~rawdata$time)
 acf(residuals(model, type="pearson"))
@@ -138,20 +145,20 @@ BIC(model) #184.03
 AIC(model)
 #AIC = 175.0618
 
-#Poisson
+# Poisson
 model<-glmer(num_bulinus_clusters~log_area+(1|site), data=rawdata, family="poisson"); summary(model)
 plot(residuals(model, type="pearson")~rawdata$time)
 AIC(model) #166.9821
 BIC(model) #162.98
 
-#Poisson w/ offset
+# Poisson w/ offset
 model<-glmer(num_bulinus_clusters~log_area+offset(log(NumQuadsSampled*0.32))+(1|site), data=rawdata, family="poisson"); summary(model)
 plot(residuals(model, type="pearson")~rawdata$time)
 AIC(model) #166.0014
 BIC(model) #170.5008
 
 rawdata$time<-as.numeric(rawdata$field_mission)
-#There are some sites with consistently low resids, but acf looks OK
+# There are some sites with consistently low resids, but acf looks OK
 c=ggplot(rawdata) +
   geom_point(aes(x=time, y=residuals(model, type="pearson"), col=site, size=6.5, alpha=0.5))+ 
   geom_line(aes(x=time, y=residuals(model, type="pearson"), col=site))+
@@ -168,7 +175,7 @@ hist(residuals(model, type="pearson"))
 plot(residuals(model, type="pearson")~predict(model)) 
 BIC(model) #170.50 
 
-#newdata<- expand.grid(log_area = seq(from=min(rawdata$log_area), to=max(rawdata$log_area), by=.1), site=unique(rawdata$site))
+# newdata<- expand.grid(log_area = seq(from=min(rawdata$log_area), to=max(rawdata$log_area), by=.1), site=unique(rawdata$site))
 newdata<- expand.grid(log_area = seq(from=min(rawdata$log_area), to=8.7, by=.1), NumQuadsSampled=15)
 newdata$phat <- predict(model, newdata, type="response", re.form=NA) #no random effects
 
@@ -185,7 +192,7 @@ c=ggplot(rawdata, aes(x=log_area, y=num_bulinus_clusters)) +
   theme(legend.position="none")
 c
 
-#(still poisson) if we take out the log(areas)<~6, does pattern persist? Yes.
+# (still poisson) if we take out the log(areas)<~6, does pattern persist? Yes.
 rawdata$site[rawdata$log_area<5.5]
 model<-glmer(num_bulinus_clusters~log_area+offset(log(NumQuadsSampled*0.32))+(1|site), data=rawdata[rawdata$log_area>5.5,], family="poisson", glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
 summary(model)
@@ -213,7 +220,7 @@ f=ggplot(rawdata[rawdata$log_area>5.5,], aes(x=log_area, y=num_bulinus_clusters)
   theme(legend.position="none")
 f
 
-#negative binomial - convergence issues
+# negative binomial - convergence issues
 model<-glmer.nb(num_bulinus_clusters~log_area+offset(log(NumQuadsSampled))+(1|site), data=rawdata, glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
 summary(model)
 plot(residuals(model, type="pearson")~rawdata$time)
