@@ -1,4 +1,4 @@
-# Wood_et_al_2019_PNAS
+# Wood et al. 2019 PNAS
 Code associated with Wood et al. 2019. "Precision mapping of snail habitat provides a powerful indicator of human schistosomiasis transmission." Proceedings of the National Academy of Sciences of the USA. https://doi.org/10.1073/pnas.1903698116. https://www.pnas.org/content/early/2019/10/22/1903698116. 
 
 This code refers to three datasets: one on the abundance and distribution of snails, which is available in its complete form (snail_data.csv), 
