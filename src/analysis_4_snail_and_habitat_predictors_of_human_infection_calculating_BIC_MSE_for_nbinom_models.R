@@ -22,7 +22,7 @@ numCores <- detectCores() - 1
 
 ###############################################
 # Load all the data according to IZZY
-villagedata <- read_csv("data/ecopredictors_data.csv")
+villagedata <- read_csv("data/INDIVIDUAL-LEVEL DATA WITHHELD TO PROTECT PATIENT PRIVACY")
 data_subset <- villagedata %>% 
   filter((year==2017 & net!=1) | (year==2018 & (prawn|veg_removal)!=1))
 unique(data_subset$Village)
