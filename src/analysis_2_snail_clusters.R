@@ -28,37 +28,9 @@ library(cowplot)
 # citation(package = "stats")
 
 # Load just the cluster and site area data
-rawdata<-read.csv("data/site_area_clusters_numquads.csv")
+rawdata<-read.csv("data/cluster_data.csv")
 rawdata<-rawdata[,-1]
-
-# Take out spaces to make formatting consistent
-rawdata$site<-gsub(" ", "", rawdata$sampling_site, fixed = TRUE)
-table(rawdata$site, rawdata$field_mission)
-
-# Rename some columns
-names(rawdata)<-c("sampling_site","field_mission","NumQuadsSampled", "AreaSampled","num_bulinus_clusters","area", "site")
-
-# sort by FM and site
-rawdata<- rawdata %>%
-  arrange(field_mission, site)
-
-sitestoinclude<-unique(rawdata$site)
-
-# We also want to see if total area of other/floating veg is a better predictor than just area
-# We need the percent area column in this dataframe to get that
-PercentOtherVegData<-read.csv("~/Documents/Schisto/Schisto/Clusters vs Site Area Analysis/PercentOtherVegData.csv")
-head(PercentOtherVegData)
-#remove spaces in site name
-PercentOtherVegData$Site<-gsub(" ", "", PercentOtherVegData$Site, fixed = TRUE)
-PercentOtherVegData<- PercentOtherVegData %>%
-  arrange(FM, Site)
-PercentOtherVegData<-PercentOtherVegData[PercentOtherVegData$Site %in% sitestoinclude,]
-dim(PercentOtherVegData)
-# same order, so just merge
-View(cbind(rawdata[,1:2], PercentOtherVegData[,1:2]))
-rawdata<-as.data.frame(cbind(rawdata, PercentOtherVegData$PercOther))
-names(rawdata)<-c(names(rawdata)[1:7], "PercentOtherVeg") #rename area_prawn to just area
-rawdata$OtherVegArea<-rawdata$area*(rawdata$PercentOtherVeg/100)
+head(rawdata)
 
 # yes, we do need to account for area sampled
 plot(rawdata$num_bulinus_clusters~rawdata$NumQuadsSampled)
@@ -133,6 +105,8 @@ plot(rawdata$log_area~rawdata$NumQuadsSampled) #yes
 ###############Area models - per site per field mission########################################################
 ####################################################################################################################
 
+rawdata$time<-as.numeric(rawdata$field_mission)
+
 # Gaussian model - theoretically inappropriate because we're working w/ zero truncated integers
 model<-lmer(num_bulinus_clusters~log_area+(1|site), data=rawdata)
 plot(residuals(model, type="pearson")~rawdata$time)
@@ -157,7 +131,7 @@ plot(residuals(model, type="pearson")~rawdata$time)
 AIC(model) #166.0014
 BIC(model) #170.5008
 
-rawdata$time<-as.numeric(rawdata$field_mission)
+
 # There are some sites with consistently low resids, but acf looks OK
 c=ggplot(rawdata) +
   geom_point(aes(x=time, y=residuals(model, type="pearson"), col=site, size=6.5, alpha=0.5))+ 
