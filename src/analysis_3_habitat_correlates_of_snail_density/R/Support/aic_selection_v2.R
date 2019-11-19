@@ -7,7 +7,7 @@ aic_sel <- function( data_list = data_list, params = params, version = version, 
   library(TMBhelper)
   source("R/Support/missing_cont_val_update_v2.R")
   source("R/Support/7_build_x_q_array.R")
-  source("R/Optimize_optim.R")
+  source("R/Optimize.R")
 
   mod_list <- list()
   terms_list <- list()
@@ -28,7 +28,7 @@ aic_sel <- function( data_list = data_list, params = params, version = version, 
   # Fit
   data_list$x_q_hat_est <- as.numeric(as.character(map$beta_p))
   Obj = TMB::MakeADFun( data = expand_xq( data_list, map ), parameters = params, DLL = version, map = map_update( map , params , data_list ), random = random, silent = silent)
-  Opt = tryCatch( Optimize( Obj , n = log(nrow(data_list$x_q)), loopnum = 6), error = function(e) NULL)
+  Opt = tryCatch( fit_tmb( Obj , n = log(nrow(data_list$x_q)), loopnum = 6), error = function(e) NULL)
 
 
   # Save model objects
@@ -82,7 +82,7 @@ aic_sel <- function( data_list = data_list, params = params, version = version, 
 
     # Fit model
     Obj = TMB::MakeADFun( data = expand_xq( data_list, map ), parameters = params, DLL = version, map = map_update( map , params , data_list ), random = random, silent = silent)
-    Opt = tryCatch( Optimize( Obj , n = log(nrow(data_list$x_q)), loopnum = 6), error = function(e) NULL)
+    Opt = tryCatch( fit_tmb( Obj , n = log(nrow(data_list$x_q)), loopnum = 6), error = function(e) NULL)
 
     # Save model objects
     # mod_list[[ind]] <- Opt
@@ -171,7 +171,7 @@ aic_sel <- function( data_list = data_list, params = params, version = version, 
 
     # Fit model
     Obj = TMB::MakeADFun( data = expand_xq( data_list, map ), parameters = params, DLL = version, map = map_update( map , params , data_list ), random = random, silent = silent)
-    Opt = tryCatch( Optimize( Obj , n = log(nrow(data_list$x_q)), loopnum = 6), error = function(e) NULL)
+    Opt = tryCatch( fit_tmb( Obj , n = log(nrow(data_list$x_q)), loopnum = 6), error = function(e) NULL)
 
     # Save model objects
     # mod_list[[ind]] <- Opt
@@ -243,7 +243,7 @@ aic_sel <- function( data_list = data_list, params = params, version = version, 
   # FIT THE FINAL MODEL
   data_list$x_q_hat_est <- as.numeric(as.character(map$beta_p))
   Obj = TMB::MakeADFun( data = expand_xq( data_list, map ), parameters = params, DLL = version, map = map_update( map , params , data_list ), random = random, silent = silent)
-  Opt = tryCatch( Optimize( Obj , n = log(nrow(data_list$x_q)), loopnum = 6), error = function(e) NULL)
+  Opt = tryCatch( fit_tmb( Obj , n = log(nrow(data_list$x_q)), loopnum = 6), error = function(e) NULL)
 
   # Save model objects
   mod_list[[ind]] <- Opt
