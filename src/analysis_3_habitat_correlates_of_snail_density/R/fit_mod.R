@@ -9,20 +9,20 @@ fit_mod <- function(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_
   source("R/Support/4_build_params_v3.R")
   source("R/Support/5_build_map_v2.R")
   source("R/Support/bad_params.R")
-  source("R/Support/6_run_variogram.R")
+  source("R/run_variogram.R")
   source("R/Support/aic_selection_v2.R")
-  source("R/Support/7_plot_coef_v2.R")
+  source("R/plot_coef_v2.R")
 
   # Creat the directory and file names
   if(!is.null(savedir)){
     suppressWarnings(dir.create(file.path(savedir)))
   }
 
-  file_name_base <- paste(c("biom", "bulinus")[as.numeric(bulinus)+1],"model",  model, c("AIC", "BIC")[as.numeric(BIC_sel)+1], c("no_mean_cont_fill", "mean_cont_fill")[as.numeric(fill_cont_mean)+1], c("no_mode_cat_fill", "mode_cat_fill")[as.numeric(fill_cat_mode)+1], "remove_outlier", remove_outlier, sep = "-")
+  file_name_base <- paste(c("biom", "bulinus")[as.numeric(bulinus)+1],"model",  model, c("AIC", "BIC")[as.numeric(BIC_sel)+1], c("no_mean_cont_fill", "mean_cont_fill")[as.numeric(fill_cont_mean)+1], c("no_mode_cat_fill", "mode_cat_fill")[as.numeric(fill_cat_mode)+1], "remove_outlier",remove_outlier, sep = "-")
 
 
   # Step 0 -- Load data, create mesh, and assign to list for TMB
-  data <- suppressWarnings(read_dat(exclude = T,  fill_cont_mean = fill_cont_mean, na_keep = T, quad = F, fill_cat_mode = fill_cat_mode, scale_cont = T, bulinus = bulinus, remove_outlier = remove_outlier)) # read data in
+  data <- read_dat(exclude = T,  fill_cont_mean = fill_cont_mean, na_keep = T, quad = F, fill_cat_mode = fill_cat_mode, scale_cont = T, bulinus = bulinus, remove_outlier = remove_outlier) # read data in
 
 
   # data <- fit_mesh(data, cluster = T, n_knots = 15) # Fit mesh
@@ -31,7 +31,7 @@ fit_mod <- function(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_
 
   # Step 1 -- Set initial values for parameters
   params <- build_params(model, data_list, incl_disease)
-  random = c("epsilon_mat", "omega_mat", "gamma_q", "x_q_cont_missing")
+  random = c("epsilon_mat", "gamma_q", "x_q_cont_missing")#, "omega_s", "omega_st")
 
 
   # Step 3 -- make and compile template file
@@ -53,7 +53,6 @@ fit_mod <- function(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_
   # -----------------------------------------------------------------------------------------------------------------------------
   # Fit 1 -- Backward model selection
   map <- build_map(model, data_list, incl_disease = incl_disease, params, space = 0, space_time = 0)
-
   mod_sel <- aic_sel( data = data_list, params = params, version = version, map = map, random = random, BIC_sel = BIC_sel, method = method, silent = silent)
 
 
@@ -128,3 +127,54 @@ fit_mod <- function(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_
   write.csv(site_id, file = filename)
 }
 
+#
+# # Run models - With outlier
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F, remove_outlier = F, method = "Nelder-Mead", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-Nelder-Mead") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = T, remove_outlier = F, method = "Nelder-Mead", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-Nelder-Mead") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = T, remove_outlier = F, method = "Nelder-Mead", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-Nelder-Mead") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = F, remove_outlier = F, method = "Nelder-Mead", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-Nelder-Mead") # Bulinus delta-pl
+#
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F, remove_outlier = F, method = "L-BFGS-B", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-L-BFGS-B") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = T, remove_outlier = F, method = "L-BFGS-B", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-L-BFGS-B") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = T, remove_outlier = F, method = "L-BFGS-B", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-L-BFGS-B") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = F, remove_outlier = F, method = "L-BFGS-B", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-L-BFGS-B") # Bulinus delta-pl
+#
+# # Run models - No outlier
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F, remove_outlier = T, method = "Nelder-Mead", silent = TRUE, savedir = "Report/Nov_bulinus_no_outlier-Nelder-Mead") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = T, remove_outlier = T, method = "Nelder-Mead", silent = TRUE, savedir = "Report/Nov_bulinus_no_outlier-Nelder-Mead") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = T, remove_outlier = T, method = "Nelder-Mead", silent = TRUE, savedir = "Report/Nov_bulinus_no_outlier-Nelder-Mead") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = F, remove_outlier = T, method = "Nelder-Mead", silent = TRUE, savedir = "Report/Nov_bulinus_no_outlier-Nelder-Mead") # Bulinus delta-pl
+#
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F, remove_outlier = T, method = "L-BFGS-B", silent = TRUE, savedir = "Report/Nov_bulinus_no_outlier-L-BFGS-B") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = T, remove_outlier = T, method = "L-BFGS-B", silent = TRUE, savedir = "Report/Nov_bulinus_no_outlier-L-BFGS-B") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = T, remove_outlier = T, method = "L-BFGS-B", silent = TRUE, savedir = "Report/Nov_bulinus_no_outlier-L-BFGS-B") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = F, remove_outlier = T, method = "L-BFGS-B", silent = TRUE, savedir = "Report/Nov_bulinus_no_outlier-L-BFGS-B") # Bulinus delta-pl
+#
+#
+#
+#
+# # Run models - AIC
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = FALSE, fill_cont_mean = F, fill_cat_mode = F, remove_outlier = F, method = "nlminb", silent = TRUE, savedir = "Report/Nov_bulinus_without_outlier-nlminb-AIC") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = FALSE, fill_cont_mean = T, fill_cat_mode = T, remove_outlier = F, method = "nlminb", silent = TRUE, savedir = "Report/Nov_bulinus_without_outlier-nlminb-AIC") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = FALSE, fill_cont_mean = F, fill_cat_mode = T, remove_outlier = F, method = "nlminb", silent = TRUE, savedir = "Report/Nov_bulinus_without_outlier-nlminb-AIC") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = FALSE, fill_cont_mean = T, fill_cat_mode = F, remove_outlier = F, method = "nlminb", silent = TRUE, savedir = "Report/Nov_bulinus_without_outlier-nlminb-AIC") # Bulinus delta-pl
+#
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = FALSE, fill_cont_mean = F, fill_cat_mode = F, remove_outlier = TRUE, method = "nlminb", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-nlminb-AIC") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = FALSE, fill_cont_mean = T, fill_cat_mode = T, remove_outlier = TRUE, method = "nlminb", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-nlminb-AIC") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = FALSE, fill_cont_mean = F, fill_cat_mode = T, remove_outlier = TRUE, method = "nlminb", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-nlminb-AIC") # Bulinus delta-pl
+# fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = FALSE, fill_cont_mean = T, fill_cat_mode = F, remove_outlier = TRUE, method = "nlminb", silent = TRUE, savedir = "Report/Nov_bulinus_with_outlier-nlminb-AIC") # Bulinus delta-pl
+#
+#
+# # Final model
+# dpl <- fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = TRUE, fill_cont_mean = F, fill_cat_mode = F, remove_outlier = TRUE, method = "nlminb", silent = TRUE, savedir = "Report/March_DPL_final_no_outlier") # Bulinus delta-pl
+# zipl <- fit_mod(model = 6, incl_disease = 0, bulinus = T, BIC_sel = TRUE, fill_cont_mean = F, fill_cat_mode = F, remove_outlier = TRUE, method = "nlminb", silent = TRUE, savedir = "Report/March_ZIPL_final_no_outlier") # Bulinus z-pl
+#
+# # fit_mod(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F) # Bulinus delta-pl - WORKSb
+# # # fit_mod(model = 6, incl_disease = 0, bulinus = T, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F) # Bulinus ZI-PL - WORKS
+# # fit_mod(model = 0, incl_disease = 0, bulinus = F, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F) # Biomp delta-lognormal - DOES NOT CONVERGE
+# # fit_mod(model = 1, incl_disease = 0, bulinus = F, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F) # Biomp delta-poisson - DOES NOT CONVERGE
+# # fit_mod(model = 2, incl_disease = 0, bulinus = F, BIC_sel = T, fill_cont_mean = F, fill_cat_mode = F) # Biomp delta-lognormal poisson - WORKS
+# # #  fit_mod(model = 4, incl_disease = 0, bulinus = F, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = F) # Biomp ZI-lognormal - DOES NOT WORK
+# # # fit_mod(model = 5, incl_disease = 0, bulinus = F, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = F) # Biomp ZI-poisson - DOES NOT WORK
+# # fit_mod(model = 6, incl_disease = 0, bulinus = F, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = F) # Biomp ZI-PL - WORKS
+# # fit_mod(model = 8, incl_disease = 0, bulinus = F, BIC_sel = T, fill_cont_mean = T, fill_cat_mode = F) # Biomp tweedie - WORKS

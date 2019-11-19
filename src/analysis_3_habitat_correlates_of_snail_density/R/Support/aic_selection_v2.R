@@ -1,12 +1,11 @@
 # Function to do backward model selection using p-values, aic, or bic
 
 aic_sel <- function( data_list = data_list, params = params, version = version, map = map, random = random , BIC_sel = T, method = "Nelder-Mead", silent = TRUE ){
-
   library(plyr)
   library(gtools)
   library(TMB)
   library(TMBhelper)
-  source("R/Support/8_missing_cont_val_update_v2.R")
+  source("R/Support/missing_cont_val_update_v2.R")
   source("R/Support/7_build_x_q_array.R")
   source("R/Optimize_optim.R")
 

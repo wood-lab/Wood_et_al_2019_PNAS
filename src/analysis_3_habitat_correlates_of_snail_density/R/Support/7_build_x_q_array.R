@@ -2,15 +2,6 @@
 
 expand_xq <- function( data_list, map ){
 
-  # Which continuos covariates observations are turned off? - Set to 0 so no expansion
-  x_q <- data_list$x_q
-  cont_covar <- grep("cont_covar_", colnames(x_q))
-  turned_off <- which(is.na(as.numeric(as.character(map$beta_p))))
-  turned_off_cont_covar <- turned_off[which(turned_off %in% cont_covar)]
-  x_q[,turned_off_cont_covar] <- 0
-  x_q[which(data_list$fit_ll == 0),] <- 0
-  data_list$x_q <- x_q
-
   # Which categorical covariates are turned off? - Set to 0 so no expansion
   x_q <- data_list$x_q
   cat_covar <- grep("cat_covar_", colnames(x_q))
@@ -49,6 +40,7 @@ expand_xq <- function( data_list, map ){
     # Fill array
     x_q_array[1:nrow(cat_fill),,i] <- cat_fill
   }
+
 
   data_list$x_q_array <- x_q_array
   return(data_list)

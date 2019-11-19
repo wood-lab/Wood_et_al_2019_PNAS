@@ -74,7 +74,7 @@ Optimize_optim = function( obj, fn=obj$fn, gr=obj$gr, startpar=obj$par, lower=re
   if( all(c("par","objective") %in% names(opt)) ) parameter_estimates[["negloglike"]] = opt[["objective"]]
   if( all(c("par","value") %in% names(opt)) ) parameter_estimates[["negloglike"]] = opt[["value"]]
 
-  parameter_estimates[["Convergence_check"]] = ifelse( parameter_estimates[["max_gradient"]]<0.0001, "There is no evidence that the model is not converged", "The model is likely not converged" )
+  parameter_estimates[["Convergence_check"]] = ifelse( parameter_estimates[["max_gradient"]]<0.0001, "There is no evidence that the model is not converged", paste0("Final gradient is ", round(parameter_estimates[["max_gradient"]], 4)) )
   parameter_estimates[["number_of_coefficients"]] = c("Total"=length(unlist(obj$env$parameters)), "Fixed"=length(startpar), "Random"=length(unlist(obj$env$parameters))-length(startpar) )
   parameter_estimates[["AIC"]] = TMBhelper::TMBAIC( opt=parameter_estimates )
   if( n!=Inf ){
