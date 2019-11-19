@@ -99,7 +99,7 @@ aic_weights <- exp(-0.5 * daic_vec)
 aic_weights <- aic_weights / sum(aic_weights)
 
 # AICc
-aicc_vec <- sapply(mod_list, AICc)
+aicc_vec <- sapply(mod_list, AICcmodavg::AICc)
 daicc_vec <- aicc_vec - min(aicc_vec)
 aicc_weights <- exp(-0.5 * daicc_vec)
 aicc_weights <- aicc_weights / sum(aicc_weights)
@@ -153,7 +153,7 @@ stime <- system.time({
     aic_weights_tmp <- aic_weights_tmp / sum(aic_weights_tmp)
     
     # AICc of new models
-    aicc_vec_tmp <- sapply(mod_tmp, AICc )
+    aicc_vec_tmp <- sapply(mod_tmp, AICcmodavg::AICc )
     daicc_vec_tmp <- aicc_vec_tmp - min(aicc_vec_tmp)
     aicc_weights_tmp <- exp(-0.5 * daicc_vec_tmp)
     aicc_weights_tmp <- aicc_weights_tmp / sum(aicc_weights_tmp)
@@ -192,7 +192,7 @@ pred_prob_mat <- mse_pred
 expected_outcome_mat <- ifelse( mse_pred > 0.5, 1, 0)
 
 # Get prediction accuracty
-acc_mat <- mse_pred == data_subset_complete$Sh
+acc_mat <- expected_outcome_mat == data_subset_complete$Sh[1:10]
 
 
 # Turn to matrices and name columns/rows

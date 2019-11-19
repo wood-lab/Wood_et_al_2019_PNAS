@@ -42,9 +42,6 @@ write.csv(data_subset_complete$mergevillage)
 # Fit base models
 mod_list <- list()
 
-# Model control
-mod_ctl <- glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=100000))
-
 # Fit
 # 1.
 mod_list[[1]] <- glmmTMB(ShW ~ Class + sex + Pop_sc + LakeYN + (1|mergevillage/ID), family=nbinom2, data = data_subset_complete)
@@ -98,7 +95,7 @@ aic_weights <- exp(-0.5 * daic_vec)
 aic_weights <- aic_weights / sum(aic_weights)
 
 # AICc
-aicc_vec <- sapply(mod_list, AICc )
+aicc_vec <- sapply(mod_list, AICcmodavg::AICc )
 daicc_vec <- aicc_vec - min(aicc_vec)
 aicc_weights <- exp(-0.5 * daicc_vec)
 aicc_weights <- aicc_weights / sum(aicc_weights)
@@ -148,7 +145,7 @@ stime <- system.time({
     aic_weights_tmp <- aic_weights_tmp / sum(aic_weights_tmp)
     
     # AICc of new models
-    aicc_vec_tmp <- sapply(mod_tmp, AICc )
+    aicc_vec_tmp <- sapply(mod_tmp, AICcmodavg::AICc )
     daicc_vec_tmp <- aicc_vec_tmp - min(aicc_vec_tmp)
     aicc_weights_tmp <- exp(-0.5 * daicc_vec_tmp)
     aicc_weights_tmp <- aicc_weights_tmp / sum(aicc_weights_tmp)

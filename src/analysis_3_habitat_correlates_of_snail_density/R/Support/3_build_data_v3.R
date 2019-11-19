@@ -1,7 +1,7 @@
 # Function to build data list for TMB. Allows for specifying which parasite you want to use if bulinus (0 = both, 1 = haem, 2 = hybrid). Bulinus selects what snail species
 
 build_data <- function(data, model, debug = 1, bulinus = T, parasite = 0){
-
+  library(gtools)
   density_data <- data$density_data
   individual_data <- data$individual_data
 
@@ -42,6 +42,12 @@ build_data <- function(data, model, debug = 1, bulinus = T, parasite = 0){
   data_list$t_q = site_df[match( as.character( density_data$field_mission ), as.character(field_mission_df$field_mission) ) , 2]
   data_list$s_q = site_df[match( as.character( density_data$site ), as.character(site_df$site) ) , 2]
   data_list$v_q = village_df[match( gsub( '[[:digit:]]+', "", as.character( density_data$site ) ), as.character(village_df$village) ) , 2]
+
+
+  data_list$n_v = length( unique( data_list$v_q ))
+
+  # Index to fit or not
+  data_list$fit_ll = rep(1, length(density_data$quad_no)) # 1 = TRUE/FIT, 0 = FALSE/DON'T FIT
 
   # Get design matrix components
   x_i_cat <- density_data[,grep("cat_covar_", colnames(density_data))]
