@@ -22,7 +22,7 @@ fit_mod <- function(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_
 
 
   # Step 0 -- Load data, create mesh, and assign to list for TMB
-  data <- read_dat(exclude = T,  fill_cont_mean = fill_cont_mean, na_keep = T, quad = F, fill_cat_mode = fill_cat_mode, scale_cont = T, bulinus = bulinus, remove_outlier = remove_outlier) # read data in
+  data <- suppressWarnings(read_dat(exclude = T,  fill_cont_mean = fill_cont_mean, na_keep = T, quad = F, fill_cat_mode = fill_cat_mode, scale_cont = T, bulinus = bulinus, remove_outlier = remove_outlier)) # read data in
 
 
   # data <- fit_mesh(data, cluster = T, n_knots = 15) # Fit mesh
@@ -37,7 +37,6 @@ fit_mod <- function(model = 2, incl_disease = 0, bulinus = T, BIC_sel = T, fill_
   # Step 3 -- make and compile template file
   setwd("src")
   library(TMB)
-  library(TMBdebug)
   library(TMBhelper)
   version = "temporal_model_spde_v3"
   if(data_list$debug == 1){
