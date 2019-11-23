@@ -54,17 +54,18 @@ PercentOtherVegData<- PercentOtherVegData %>%
   arrange(FM, Site)
 PercentOtherVegData<-PercentOtherVegData[PercentOtherVegData$Site %in% sitestoinclude,]
 dim(PercentOtherVegData)
+dim(rawdata)
 #same order, so just merge
-View(cbind(rawdata[,1:2], PercentOtherVegData[,1:2]))
+#View(cbind(rawdata[,1:2], PercentOtherVegData[,1:2]))
 rawdata<-as.data.frame(cbind(rawdata, PercentOtherVegData$PercOther))
 names(rawdata)<-c(names(rawdata)[1:7], "PercentOtherVeg") #rename area_prawn to just area
 rawdata$OtherVegArea<-rawdata$area*(rawdata$PercentOtherVeg/100)
 
-write.csv(rawdata,"data/cluster_data_TESTING.csv",sep=",")
+#write.csv(rawdata,"data/cluster_data_TESTING.csv")
 
 # Load just the cluster and site area data
-rawdata<-read.csv("data/cluster_data_TESTING.csv")
-rawdata<-rawdata[,-1]
+#rawdata<-read.csv("data/cluster_data_TESTING.csv")
+#rawdata<-rawdata[,-1]
 head(rawdata)
 
 # yes, we do need to account for area sampled
@@ -75,6 +76,8 @@ plot(rawdata$num_bulinus_clusters~rawdata$NumQuadsSampled)
 #####################################Clusters per site per time########################################################
 ####################################################################################################################
 ####################################################################################################################
+#Note: this initial analysis looks at de-aggregated data to be sure that patterns are consistent,
+#but the models that aggregate over field missions below are the final models
 
 # lmer complains about predictor scale - should we transform? Yes. Log looks good.
 hist(rawdata$area)
@@ -93,7 +96,7 @@ plot<-ggplot(rawdata,aes(x=area,y=num_bulinus_clusters))+
   theme(legend.position="none")
 plot
 
-# Other veg area
+# Other veg area - raw doesn't look good
 plot<-ggplot(rawdata,aes(x=OtherVegArea,y=num_bulinus_clusters))+
   geom_point(position=position_dodge(0.2),size=4)+
   geom_smooth(method='lm',formula=y~x,color="black")+
@@ -104,7 +107,7 @@ plot<-ggplot(rawdata,aes(x=OtherVegArea,y=num_bulinus_clusters))+
   theme(legend.position="none")
 plot
 
-# log much nicer - go w/ this - but not as nice as it used to look...
+# log much nicer - go w/ this
 # Total area
 plot<-ggplot(rawdata,aes(x=log(area),y=num_bulinus_clusters))+
   geom_point(position=position_dodge(0.2),size=4)+
@@ -149,23 +152,22 @@ acf(residuals(model, type="pearson"))
 pacf(residuals(model, type="pearson"))
 summary(model)
 hist(residuals(model, type="pearson"))
-plot(residuals(model, type="pearson")~predict(model)) #uhhh
+plot(residuals(model, type="pearson")~predict(model)) 
 BIC(model) #184.03
 AIC(model)
-#AIC = 175.0618
+#AIC = 174.0401
 
 # Poisson
 model<-glmer(num_bulinus_clusters~log_area+(1|site), data=rawdata, family="poisson"); summary(model)
 plot(residuals(model, type="pearson")~rawdata$time)
-AIC(model) #166.9821
-BIC(model) #162.98
+AIC(model) #162.9821
+BIC(model) #170.4815
 
 # Poisson w/ offset
 model<-glmer(num_bulinus_clusters~log_area+offset(log(NumQuadsSampled*0.32))+(1|site), data=rawdata, family="poisson"); summary(model)
 plot(residuals(model, type="pearson")~rawdata$time)
-AIC(model) #166.0014
+AIC(model) #163.0014
 BIC(model) #170.5008
-
 
 # There are some sites with consistently low resids, but acf looks OK
 c=ggplot(rawdata) +
@@ -250,7 +252,7 @@ summary(model)
 hist(residuals(model, type="pearson"))
 plot(residuals(model, type="pearson")~predict(model)) 
 AIC(model)
-#AIC = 168.3445
+#AIC = 165.0014
 
 newdata<- expand.grid(log_area = seq(from=min(rawdata$log_area), to=max(rawdata$log_area), by=.1), site=unique(rawdata$site))
 newdata<- expand.grid(log_area = seq(from=min(rawdata$log_area), to=max(rawdata$log_area), by=.1), NumQuadsSampled=15)
@@ -278,7 +280,7 @@ BIC(model) #157.53
 model<-glmer(num_bulinus_clusters~log_veg_area+offset(log(NumQuadsSampled*0.32))+(1|site), data=rawdata, family="poisson")
 plot(residuals(model, type="pearson")~rawdata$time)
 AIC(model) #150.12
-BIC(model) #150.12
+BIC(model) #157.6194
 
 #There are some sites with consistently low resids, but acf looks OK
 g=ggplot(rawdata) +
@@ -317,9 +319,6 @@ d
 #stick the supplemental plots together
 plot_grid(c, d, labels="auto")
 
-test<-c(5,6,7,8)
-exp(test)
-
 ####################################################################################################################
 ####################################################################################################################
 ##############################Combine by site across time points#####################################
@@ -337,8 +336,7 @@ AggData<-rawdata %>%
   group_by(site) %>%
   #summarise(meanarea = mean(area, na.rm = T))
   summarise(meanarea = mean(area), meanothervegarea=mean(OtherVegArea), totalarea=sum(area), totalotherarea=sum(OtherVegArea), totalclusters=sum(num_bulinus_clusters), totalareasampled=sum(NumQuadsSampled))
-
-View(AggData)
+#View(AggData)
 
 #this doesn't seem as reasonable - so we sum instead of using means
 plot(OtherVegArea~as.factor(site), data=rawdata)
@@ -363,7 +361,6 @@ hist(residuals(test, type="pearson"))
 plot(residuals(test, type="pearson")~predict(test)) 
 AIC(test)
 BIC(test) #74.72
-#AIC = 73.38534 to 73.30674 w/ offset
 
 #newdata<- expand.grid(log_area = seq(from=min(rawdata$log_area), to=max(rawdata$log_area), by=.1), site=unique(rawdata$site))
 newdata<- expand.grid(totalarea = seq(from=min(AggData$totalarea), to=max(AggData$totalarea), by=.1), totalareasampled=(15*6))
@@ -390,9 +387,7 @@ plot(residuals(test, type="pearson"), ylim=c(-3, 3))
 hist(residuals(test, type="pearson"))
 plot(residuals(test, type="pearson")~predict(test)) 
 AIC(test)
-AICc(test)
 BIC(test) #70.01
-#AIC = 68.59614; AICc = 69.59614
 
 #newdata<- expand.grid(log_area = seq(from=min(rawdata$log_area), to=max(rawdata$log_area), by=.1), site=unique(rawdata$site))
 newdata<- expand.grid(logtotalarea = seq(from=6, to=11, by=.1), totalareasampled=(15*6))
@@ -424,7 +419,6 @@ plot(residuals(test, type="pearson")~predict(test))
 AIC(test)
 AICc(test)
 BIC(test) #59.59
-#AIC = 58.16935; AICc = 59.16935
 
 #newdata<- expand.grid(log_area = seq(from=min(rawdata$log_area), to=max(rawdata$log_area), by=.1), site=unique(rawdata$site))
 newdata<- expand.grid(logtotalvegarea = seq(from=min(AggData$logtotalvegarea), to=9.5, by=.1), totalareasampled=(15*16))
