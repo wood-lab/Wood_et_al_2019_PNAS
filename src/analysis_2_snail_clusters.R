@@ -427,6 +427,8 @@ newdata <- add_ci(newdata, test, names = c("lwr", "upr"), alpha = 0.05) %>%
   mutate(type = "parametric")
 newdata$upr[newdata$upr>9]<-9 #for plotting purposes
 
+#MAKE MAIN TEXT FIGURE 2D
+
 d=ggplot(AggData, aes(x=logtotalvegarea)) +
   geom_ribbon(data = newdata, aes(x=logtotalvegarea, ymin = lwr, ymax = upr), alpha=.2) +
   geom_line(data=newdata,aes(x=logtotalvegarea,y=phat), size=1, col="gray50", linetype="dashed")+
@@ -461,3 +463,4 @@ c=ggplot(AggData2, aes(x=logtotalvegarea)) +
   theme(plot.title=element_text(size=10),axis.text.y=element_text(size=10),axis.title.y=element_text(size=10),axis.text.x=element_text(size=10),axis.title.x=element_text(size=10),panel.background=element_rect(fill="white",color="black"),panel.grid.major=element_blank(),panel.grid.minor=element_blank(),plot.margin=unit(c(0,0,0,0),"cm"))+
   theme(legend.position="none")
 c
+
