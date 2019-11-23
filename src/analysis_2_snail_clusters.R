@@ -27,8 +27,43 @@ library(cowplot)
 # citation(package = "MASS")
 # citation(package = "stats")
 
+#Load just the cluster and site area data
+rawdata<-read.csv("data/site_area_clusters_numquads.csv")
+rawdata<-rawdata[,-1]
+
+#Take out spaces to make formatting consistent
+rawdata$site<-gsub(" ", "", rawdata$sampling_site, fixed = TRUE)
+table(rawdata$site, rawdata$field_mission)
+
+#Rename some columns
+names(rawdata)<-c("sampling_site","field_mission","NumQuadsSampled", "AreaSampled","num_bulinus_clusters","area", "site")
+
+#sort by FM and site
+rawdata<- rawdata %>%
+  arrange(field_mission, site)
+
+sitestoinclude<-unique(rawdata$site)
+
+#We also want to see if total area of other/floating veg is a better predictor than just area
+#We need the percent area column in this dataframe to get that
+PercentOtherVegData<-read.csv("data/PercentOtherVegData.csv")
+head(PercentOtherVegData)
+#remove spaces in site name
+PercentOtherVegData$Site<-gsub(" ", "", PercentOtherVegData$Site, fixed = TRUE)
+PercentOtherVegData<- PercentOtherVegData %>%
+  arrange(FM, Site)
+PercentOtherVegData<-PercentOtherVegData[PercentOtherVegData$Site %in% sitestoinclude,]
+dim(PercentOtherVegData)
+#same order, so just merge
+View(cbind(rawdata[,1:2], PercentOtherVegData[,1:2]))
+rawdata<-as.data.frame(cbind(rawdata, PercentOtherVegData$PercOther))
+names(rawdata)<-c(names(rawdata)[1:7], "PercentOtherVeg") #rename area_prawn to just area
+rawdata$OtherVegArea<-rawdata$area*(rawdata$PercentOtherVeg/100)
+
+write.csv(rawdata,"data/cluster_data_TESTING.csv",sep=",")
+
 # Load just the cluster and site area data
-rawdata<-read.csv("data/cluster_data.csv")
+rawdata<-read.csv("data/cluster_data_TESTING.csv")
 rawdata<-rawdata[,-1]
 head(rawdata)
 
